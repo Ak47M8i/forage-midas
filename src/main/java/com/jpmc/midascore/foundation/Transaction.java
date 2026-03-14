@@ -1,48 +1,47 @@
-package com.jpmc.midascore.foundation;
+package com.vagabond.forgemidas.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.Instant;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Entity
+@Table(name = "transactions")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Transaction {
-    private long senderId;
-    private long recipientId;
-    private float amount;
 
-    public Transaction() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String userId;
+
+    @Column(nullable = false)
+    private String referenceId;   // idempotency key
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransactionType type; // CREDIT / DEBIT
+
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    private TransactionStatus status; // PENDING / COMPLETED / FAILED
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = Instant.now();
+        if (this.status == null) this.status = TransactionStatus.PENDING;
     }
 
-    public Transaction(long senderId, long recipientId, float amount) {
-        this.senderId = senderId;
-        this.recipientId = recipientId;
-        this.amount = amount;
-    }
-
-    public long getSenderId() {
-        return senderId;
-    }
-
-    public void setSenderId(long senderId) {
-        this.senderId = senderId;
-    }
-
-    public long getRecipientId() {
-        return recipientId;
-    }
-
-    public void setRecipientId(long recipientId) {
-        this.recipientId = recipientId;
-    }
-
-    public float getAmount() {
-        return amount;
-    }
-
-    public void setAmount(float amount) {
-        this.amount = amount;
-    }
-
-    @Override
-    public String toString() {
-        return "Transaction {senderId=" + senderId + ", recipientId=" + recipientId + ", amount=" + amount + "}";
-    }
+    public enum TransactionType  { CREDIT, DEBIT }
+    public enum TransactionStatus { PENDING, COMPLETED, FAILED }
 }
