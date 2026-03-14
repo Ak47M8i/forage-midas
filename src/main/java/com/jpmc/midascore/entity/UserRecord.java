@@ -1,46 +1,38 @@
-package com.jpmc.midascore.entity;
+package com.vagabond.forgemidas.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
 
 @Entity
+@Table(name = "user_records")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserRecord {
 
     @Id
-    @GeneratedValue()
-    private long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(unique = true, nullable = false)
+    private String userId;
 
-    @Column(nullable = false)
-    private float balance;
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal balance;
 
-    protected UserRecord() {
+    public void credit(BigDecimal amount) {
+        this.balance = this.balance.add(amount);
     }
 
-    public UserRecord(String name, float balance) {
-        this.name = name;
-        this.balance = balance;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("User[id=%d, name='%s', balance='%f'", id, name, balance);
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public float getBalance() {
-        return balance;
-    }
-
-    public void setBalance(float balance) {
-        this.balance = balance;
+    public void debit(BigDecimal amount) {
+        if (this.balance.compareTo(amount) < 0) {
+            throw new IllegalStateException(
+                "Insufficient funds for user: " + userId +
+                ". Balance: " + balance + ", Requested: " + amount
+            );
+        }
+        this.balance = this.balance.subtract(amount);
     }
 }
